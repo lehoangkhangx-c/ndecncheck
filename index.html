@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECN Tracker | Hệ Thống Quản Lý Số Lot</title>
+    <meta name="description" content="Hệ thống quản lý thay đổi kỹ thuật (ECN) và theo dõi số lot hàng xuất xưởng.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Main Content Area -->
+        <main class="main-view">
+            <header class="main-header">
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <button id="sidebarToggle" class="line-item"
+                        style="border: none; background: transparent; width: 32px; height: 32px; padding: 0; justify-content: center; color: var(--text-main);">
+                        <i data-lucide="menu" style="width: 20px; height: 20px;"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-gradient" style="font-size: 20px; margin: 0;">ECN Tracking</h1>
+                        <p class="desktop-only" style="color: var(--text-dim); margin-top: 2px; font-size: 12px;">Hệ
+                            thống theo dõi tiến độ</p>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <div id="adminActions" style="display: none; gap: 8px; align-items: center;">
+                        <button id="addEcnBtn" class="line-item"
+                            style="border: none; background: transparent; color: var(--primary); width: 32px; height: 32px; padding: 0; justify-content: center;">
+                            <i data-lucide="plus" style="width: 20px; height: 20px;"></i>
+                            <span class="desktop-only" style="margin-left: 6px;">Thêm ECN</span>
+                        </button>
+                    </div>
+                    <button id="adminToggle" class="line-item"
+                        style="border: none; background: transparent; width: 32px; height: 32px; padding: 0; justify-content: center; color: var(--text-dim);">
+                        <i data-lucide="user-cog" style="width: 20px; height: 20px;"></i>
+                        <span class="desktop-only" style="font-size: 13px; margin-left: 6px;">Admin</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="search-container">
+                <i data-lucide="search" class="search-icon"></i>
+                <input type="text" id="searchInput" class="search-input" placeholder="Tìm kiếm...">
+            </div>
+
+            <div id="ecnGrid" class="ecn-grid">
+                <!-- Cards will be injected here -->
+            </div>
+        </main>
+
+        <!-- Right Sidebar -->
+        <aside class="sidebar">
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;" class="mobile-only">
+                <button id="closeSidebar"
+                    style="background: none; border: none; color: var(--text-dim); cursor: pointer;">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="sidebar-section">
+                <h3>Production Lines</h3>
+                <div id="lineList">
+                    <!-- Lines will be injected dynamically -->
+                </div>
+            </div>
+
+        </aside>
+    </div>
+
+    <!-- Detail Panel Overlay -->
+    <div id="detailOverlay" class="detail-overlay">
+        <div class="detail-panel">
+            <div style="display: flex; align-items: flex-start; justify-content: center; margin-bottom: 12px; position: relative; min-height: 42px;">
+                <button id="closeDetail"
+                    style="background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; position: absolute; left: -8px; top: -14px; transition: all 0.2s;">
+                    <i data-lucide="arrow-left" style="width: 20px; height: 20px;"></i>
+                </button>
+                <div style="display: flex; flex-direction: column; align-items: center; width: 100%; padding: 0 48px; margin-top: -12px;">
+                    <h3 id="detailHeaderTitle"
+                        style="margin: 0; font-size: 28px; font-weight: 900; line-height: 1.1; text-align: center; word-break: break-word; transition: all 0.3s ease; letter-spacing: -0.5px;">
+                        -</h3>
+                </div>
+            </div>
+
+            <div id="detailContent">
+                <!-- Detail content injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add ECN Modal -->
+    <div id="addModal" class="detail-overlay"
+        style="z-index: 2100; align-items: center; justify-content: center; padding: 10px;">
+        <div class="detail-panel"
+            style="width: 95%; max-width: 360px; height: auto; max-height: 92vh; overflow-y: auto; border-radius: var(--radius-lg); padding: 18px;">
+            <h2 style="margin-bottom: 14px; font-size: 17px;">Thêm ECN Mới</h2>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <input type="text" id="newEcnId" class="search-input" placeholder="Tên ECN (ví dụ: ECN-2024-004)"
+                    style="padding: 10px; font-size: 13px; height: 42px;">
+
+                <textarea id="newItemCode" class="search-input"
+                    style="height: 56px; resize: none; padding: 10px; font-size: 12px;"
+                    placeholder="Mã hàng (Mã1, Mã2...)"></textarea>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <select id="newLine" class="search-input" style="height: 42px; font-size: 12px; padding: 0 10px;">
+                        <option value="CR">CR</option>
+                        <option value="CV">CV</option>
+                        <option value="SP">SP</option>
+                        <option value="HC">HC</option>
+                        <option value="PSW">PSW</option>
+                        <option value="VS1">VS1</option>
+                        <option value="HM">HM</option>
+                        <option value="VS2">VS2</option>
+                        <option value="GA">GA</option>
+                        <option value="PC">PC</option>
+                    </select>
+                    <select id="new4m" class="search-input" style="height: 42px; font-size: 12px; padding: 0 10px;">
+                        <option value="" disabled selected>Chọn 4M+1E...</option>
+                        <option value="Machine">Machine</option>
+                        <option value="Materials">Materials</option>
+                        <option value="Method">Method</option>
+                        <option value="Measurement">Measurement</option>
+                        <option value="Environment">Environment</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <select id="newCat" class="search-input"
+                        style="flex: 1; height: 42px; font-size: 12px; padding: 0 10px;">
+                        <!-- Categories -->
+                    </select>
+                    <button id="addCatModalBtn"
+                        style="width: 42px; height: 42px; background: var(--primary-glow); border: 1px solid var(--primary); color: var(--primary); border-radius: 6px; display: none; align-items: center; justify-content: center; cursor: pointer;">
+                        <i data-lucide="plus" style="width: 18px;"></i>
+                    </button>
+                </div>
+
+                <textarea id="newDesc" class="search-input" style="height: 56px; padding: 10px; font-size: 12px;"
+                    placeholder="Nội dung thay đổi"></textarea>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <input type="text" id="newImage" class="search-input"
+                        style="height: 42px; font-size: 11px; padding: 0 10px;" placeholder="Link Ảnh (Drive)">
+                    <input type="text" id="newDrive" class="search-input"
+                        style="height: 42px; font-size: 11px; padding: 0 10px;" placeholder="Link Tài liệu">
+                </div>
+
+                <div style="display: flex; gap: 8px; margin-top: 6px;">
+                    <button id="saveEcn"
+                        style="flex: 1; padding: 10px; background: var(--primary); color: white; border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; font-size: 13px;">Lưu</button>
+                    <button id="cancelAdd"
+                        style="flex: 1; padding: 10px; background: var(--bg-accent); color: var(--text-dim); border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; font-size: 13px;">Hủy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Category Overlay (Custom Prompt) -->
+    <div id="catPromptOverlay" class="detail-overlay"
+        style="z-index: 2200; align-items: center; justify-content: center;">
+        <div class="detail-panel"
+            style="width: 400px; height: auto; border-radius: var(--radius-md); padding: 32px; border: 1px solid var(--primary);">
+            <h3 style="margin-bottom: 20px;">Thêm phân loại mới</h3>
+            <input type="text" id="newCatInput" class="search-input" placeholder="Tên phân loại (ví dụ: Seal, Wire...)">
+            <div style="display: flex; gap: 12px; margin-top: 24px;">
+                <button id="saveCatBtn"
+                    style="flex: 1; padding: 12px; background: var(--primary); color: var(--bg-dark); border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer;">Lưu</button>
+                <button id="cancelCatBtn"
+                    style="flex: 1; padding: 12px; background: var(--bg-accent); color: white; border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer;">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div id="deleteConfirmOverlay" class="detail-overlay"
+        style="z-index: 2300; align-items: center; justify-content: center;">
+        <div class="detail-panel"
+            style="width: 400px; height: auto; border-radius: var(--radius-md); padding: 32px; border: 1px solid var(--danger);">
+            <h3 style="margin-bottom: 12px; color: var(--danger);">Xác nhận xóa</h3>
+            <p id="deleteConfirmText" style="margin-bottom: 24px; line-height: 1.5; color: var(--text-dim);"></p>
+            <div style="display: flex; gap: 12px;">
+                <button id="confirmDeleteBtn"
+                    style="flex: 1; padding: 12px; background: var(--danger); color: white; border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer;">Xóa</button>
+                <button id="cancelDeleteBtn"
+                    style="flex: 1; padding: 12px; background: var(--bg-accent); color: var(--text-main); border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer;">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="passwordModal" class="detail-overlay" style="z-index: 3000; align-items: center; justify-content: center;">
+        <div class="detail-panel" style="width: 320px; height: auto; border-radius: var(--radius-md); padding: 24px; border: 1px solid var(--primary); text-align: center;">
+            <h3 style="margin-bottom: 16px;">Xác thực Admin</h3>
+            <input type="password" id="adminPasswordInput" class="search-input" placeholder="Nhập mật khẩu..." style="margin-bottom: 20px; text-align: center; letter-spacing: 4px;">
+            <div style="display: flex; gap: 8px;">
+                <button id="submitPassword" style="flex: 1; padding: 10px; background: var(--primary); color: white; border: none; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer;">Đăng nhập</button>
+                <button id="cancelPassword" style="flex: 1; padding: 10px; background: var(--bg-accent); color: var(--text-dim); border: none; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer;">Hủy</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+    <!-- Full Screen Image Viewer -->
+    <div id="imageViewer" class="detail-overlay"
+        style="z-index: 9999; background: rgba(0, 0, 0, 0.98); display: none; align-items: center; justify-content: center; padding: 0; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;">
+        <button id="closeViewer" onclick="closeImageViewer()"
+            style="position: absolute; top: 20px; right: 20px; background: none; border: none; color: white; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10000; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));">
+            <i data-lucide="x" style="width: 24px; height: 24px;"></i>
+        </button>
+        <div id="viewerContent"
+            style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; touch-action: none;">
+            <img id="fullImage" src=""
+                style="max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); cursor: zoom-in; touch-action: none;">
+        </div>
+    </div>
+</body>
+
+</html>
