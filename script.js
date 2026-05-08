@@ -580,30 +580,35 @@ function setupEventListeners() {
     });
 
     // Custom Password Modal Logic
-    const passwordModal = document.getElementById('passwordModal');
-    const adminPasswordInput = document.getElementById('adminPasswordInput');
-    const submitPassword = document.getElementById('submitPassword');
-    const cancelPassword = document.getElementById('cancelPassword');
+    if (adminToggle) {
+        adminToggle.addEventListener('click', () => {
+            if (!isAdmin) {
+                if (passwordModal) {
+                    passwordModal.style.display = 'flex';
+                    if (adminPasswordInput) {
+                        adminPasswordInput.value = '';
+                        adminPasswordInput.focus();
+                    }
+                }
+            } else {
+                isAdmin = false;
+                updateAdminUI();
+            }
+        });
+    }
 
-    adminToggle.addEventListener('click', () => {
-        if (!isAdmin) {
-            passwordModal.style.display = 'flex';
-            adminPasswordInput.value = '';
-            adminPasswordInput.focus();
-        } else {
-            isAdmin = false;
-            updateAdminUI();
-        }
-    });
+    if (cancelPassword) {
+        cancelPassword.addEventListener('click', () => {
+            if (passwordModal) passwordModal.style.display = 'none';
+        });
+    }
 
-    cancelPassword.addEventListener('click', () => {
-        passwordModal.style.display = 'none';
-    });
-
-    submitPassword.addEventListener('click', verifyAdminPassword);
-    adminPasswordInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') verifyAdminPassword();
-    });
+    if (submitPassword) submitPassword.addEventListener('click', verifyAdminPassword);
+    if (adminPasswordInput) {
+        adminPasswordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') verifyAdminPassword();
+        });
+    }
 
     function verifyAdminPassword() {
         const password = adminPasswordInput.value;
@@ -620,14 +625,17 @@ function setupEventListeners() {
     }
 
     function updateAdminUI() {
-        adminToggle.classList.toggle('active', isAdmin);
-        adminToggle.innerHTML = isAdmin ?
-            '<i data-lucide="unlock" style="width: 20px; height: 20px;"></i> <span class="desktop-only" style="font-size: 13px; margin-left: 6px;">Admin On</span>' :
-            '<i data-lucide="user-cog" style="width: 20px; height: 20px;"></i> <span class="desktop-only" style="font-size: 13px; margin-left: 6px;">Admin Off</span>';
-        adminActions.style.display = isAdmin ? 'flex' : 'none';
-        adminCategoryActions.style.display = isAdmin ? 'block' : 'none';
-        addCatModalBtn.style.display = isAdmin ? 'flex' : 'none';
-        lucide.createIcons();
+        if (adminToggle) {
+            adminToggle.classList.toggle('active', isAdmin);
+            adminToggle.innerHTML = isAdmin ?
+                '<i data-lucide="unlock" style="width: 20px; height: 20px;"></i> <span class="desktop-only" style="font-size: 13px; margin-left: 6px;">Admin On</span>' :
+                '<i data-lucide="user-cog" style="width: 20px; height: 20px;"></i> <span class="desktop-only" style="font-size: 13px; margin-left: 6px;">Admin Off</span>';
+        }
+        if (adminActions) adminActions.style.display = isAdmin ? 'flex' : 'none';
+        if (adminCategoryActions) adminCategoryActions.style.display = isAdmin ? 'block' : 'none';
+        if (addCatModalBtn) addCatModalBtn.style.display = isAdmin ? 'flex' : 'none';
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
         renderECNs();
         renderCategories();
     }
