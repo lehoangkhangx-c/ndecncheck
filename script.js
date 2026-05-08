@@ -108,11 +108,15 @@ async function loadData() {
     try {
         const response = await fetch(SCRIPT_URL);
         const serverData = await response.json();
-        if (serverData && Array.isArray(serverData)) {
+        // Chỉ ghi đè nếu server có dữ liệu (để tránh bị trắng trang khi file Sheet mới tạo)
+        if (serverData && Array.isArray(serverData) && serverData.length > 0) {
             ecns = serverData;
             localStorage.setItem('ecns', JSON.stringify(ecns));
+            renderLines(); // Cập nhật lại cả danh sách Line
             renderECNs();
             console.log('Dữ liệu đã được cập nhật từ Server.');
+        } else {
+            console.log('Server hiện đang trống, giữ lại dữ liệu hiện tại.');
         }
     } catch (e) {
         console.error('Không thể kết nối Server:', e);
@@ -684,9 +688,18 @@ function setupEventListeners() {
     });
 
     // Add ECN Modal
-    addEcnBtn.addEventListener('click', () => {
-        addModal.style.display = 'flex';
-    });
+    if (addEcnBtn) {
+        addEcnBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Opening Add Modal...');
+            editingEcnId = null;
+            document.getElementById('modalTitle').textContent = 'Thêm ECN Mới';
+            const form = document.getElementById('addEcnForm');
+            if (form) form.reset();
+            if (addModal) addModal.style.display = 'flex';
+            renderCategorySelect();
+        });
+    }
 
     cancelAdd.addEventListener('click', () => {
         addModal.style.display = 'none';
