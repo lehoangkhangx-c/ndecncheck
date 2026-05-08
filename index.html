@@ -33,15 +33,15 @@
                 <div style="display: flex; gap: 8px; align-items: center;">
                     <div id="adminActions" style="display: none; gap: 8px; align-items: center;">
                         <button id="addEcnBtn" class="line-item"
-                            style="border: none; background: transparent; color: var(--primary); width: 32px; height: 32px; padding: 0; justify-content: center;">
+                            style="border: none; background: transparent; color: var(--primary); width: 32px; height: 32px; padding: 0; justify-content: center; display: flex; align-items: center;">
                             <i data-lucide="plus" style="width: 20px; height: 20px;"></i>
-                            <span class="desktop-only" style="margin-left: 6px;">Thêm ECN</span>
+                            <span class="desktop-only" style="margin-left: 6px; font-weight: 600; font-size: 13px;">Thêm ECN</span>
                         </button>
                     </div>
                     <button id="adminToggle" class="line-item"
-                        style="border: none; background: transparent; width: 32px; height: 32px; padding: 0; justify-content: center; color: var(--text-dim);">
+                        style="border: none; background: transparent; width: 32px; height: 32px; padding: 0; justify-content: center; display: flex; align-items: center; color: var(--text-dim);">
                         <i data-lucide="user-cog" style="width: 20px; height: 20px;"></i>
-                        <span class="desktop-only" style="font-size: 13px; margin-left: 6px;">Admin</span>
+                        <span class="desktop-only" style="font-size: 13px; margin-left: 6px; font-weight: 600;">Admin</span>
                     </button>
                 </div>
             </header>
@@ -100,14 +100,14 @@
         style="z-index: 2100; align-items: center; justify-content: center; padding: 10px;">
         <div class="detail-panel"
             style="width: 95%; max-width: 360px; height: auto; max-height: 92vh; overflow-y: auto; border-radius: var(--radius-lg); padding: 18px;">
-            <h2 style="margin-bottom: 14px; font-size: 17px;">Thêm ECN Mới</h2>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
+            <h2 id="modalTitle" style="margin-bottom: 14px; font-size: 17px;">Thêm ECN Mới</h2>
+            <form id="addEcnForm" style="display: flex; flex-direction: column; gap: 8px;">
                 <input type="text" id="newEcnId" class="search-input" placeholder="Tên ECN (ví dụ: ECN-2024-004)"
-                    style="padding: 10px; font-size: 13px; height: 42px;">
+                    style="padding: 10px; font-size: 13px; height: 42px;" required>
 
                 <textarea id="newItemCode" class="search-input"
                     style="height: 56px; resize: none; padding: 10px; font-size: 12px;"
-                    placeholder="Mã hàng (Mã1, Mã2...)"></textarea>
+                    placeholder="Mã hàng (Mã1, Mã2...)" required></textarea>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <select id="newLine" class="search-input" style="height: 42px; font-size: 12px; padding: 0 10px;">
@@ -137,7 +137,7 @@
                         style="flex: 1; height: 42px; font-size: 12px; padding: 0 10px;">
                         <!-- Categories -->
                     </select>
-                    <button id="addCatModalBtn"
+                    <button type="button" id="addCatModalBtn"
                         style="width: 42px; height: 42px; background: var(--primary-glow); border: 1px solid var(--primary); color: var(--primary); border-radius: 6px; display: none; align-items: center; justify-content: center; cursor: pointer;">
                         <i data-lucide="plus" style="width: 18px;"></i>
                     </button>
@@ -154,12 +154,12 @@
                 </div>
 
                 <div style="display: flex; gap: 8px; margin-top: 6px;">
-                    <button id="saveEcn"
+                    <button type="button" id="saveEcn"
                         style="flex: 1; padding: 10px; background: var(--primary); color: white; border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; font-size: 13px;">Lưu</button>
-                    <button id="cancelAdd"
+                    <button type="button" id="cancelAdd"
                         style="flex: 1; padding: 10px; background: var(--bg-accent); color: var(--text-dim); border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; font-size: 13px;">Hủy</button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 

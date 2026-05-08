@@ -624,12 +624,18 @@ function setupEventListeners() {
         }
     }
 
+    function renderCategorySelect() {
+        const newCat = document.getElementById('newCat');
+        if (!newCat) return;
+        newCat.innerHTML = categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+    }
+
     function updateAdminUI() {
         if (adminToggle) {
             adminToggle.classList.toggle('active', isAdmin);
-            adminToggle.innerHTML = isAdmin ?
-                '<i data-lucide="unlock" style="width: 20px; height: 20px;"></i> <span class="desktop-only" style="font-size: 13px; margin-left: 6px;">Admin On</span>' :
-                '<i data-lucide="user-cog" style="width: 20px; height: 20px;"></i> <span class="desktop-only" style="font-size: 13px; margin-left: 6px;">Admin Off</span>';
+            const iconName = isAdmin ? 'unlock' : 'user-cog';
+            const label = isAdmin ? 'Admin On' : 'Admin Off';
+            adminToggle.innerHTML = `<i data-lucide="${iconName}" style="width: 20px; height: 20px;"></i> <span class="desktop-only" style="font-size: 13px; margin-left: 6px;">${label}</span>`;
         }
         if (adminActions) adminActions.style.display = isAdmin ? 'flex' : 'none';
         if (adminCategoryActions) adminCategoryActions.style.display = isAdmin ? 'block' : 'none';
