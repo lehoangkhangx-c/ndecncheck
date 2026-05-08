@@ -78,6 +78,10 @@ const deleteConfirmOverlay = document.getElementById('deleteConfirmOverlay');
 const deleteConfirmText = document.getElementById('deleteConfirmText');
 const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
 const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+const passwordModal = document.getElementById('passwordModal');
+const adminPasswordInput = document.getElementById('adminPasswordInput');
+const submitPassword = document.getElementById('submitPassword');
+const cancelPassword = document.getElementById('cancelPassword');
 let categoryToDelete = null;
 let ecnToDelete = null;
 let isZoomed = false;
@@ -628,34 +632,51 @@ function setupEventListeners() {
         renderCategories();
     }
 
-    addCatBtn.addEventListener('click', addNewCategory);
-    addCatModalBtn.addEventListener('click', addNewCategory);
+    // Custom Category Prompt Listeners
+    // Admin & Category Actions - Safe handling
+    if (addCatBtn) addCatBtn.addEventListener('click', addNewCategory);
+    if (addCatModalBtn) addCatModalBtn.addEventListener('click', addNewCategory);
+
+    // Password Modal
+    if (submitPassword) submitPassword.addEventListener('click', verifyAdminPassword);
+    if (cancelPassword) cancelPassword.addEventListener('click', () => {
+        if (passwordModal) passwordModal.style.display = 'none';
+        if (adminPasswordInput) adminPasswordInput.value = '';
+    });
+
+    if (adminPasswordInput) {
+        adminPasswordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') verifyAdminPassword();
+        });
+    }
 
     // Custom Category Prompt Listeners
-    cancelCatBtn.addEventListener('click', () => {
-        catPromptOverlay.style.display = 'none';
-        newCatInput.value = '';
-    });
+    if (cancelCatBtn) {
+        cancelCatBtn.addEventListener('click', () => {
+            if (catPromptOverlay) catPromptOverlay.style.display = 'none';
+            if (newCatInput) newCatInput.value = '';
+        });
+    }
 
-    saveCatBtn.addEventListener('click', () => {
-        const newCat = newCatInput.value.trim();
-        if (newCat && !categories.includes(newCat)) {
-            categories.push(newCat);
-            syncData('addCategory', { name: newCat });
-            renderCategories();
+    if (saveCatBtn) {
+        saveCatBtn.addEventListener('click', () => {
+            if (!newCatInput) return;
+            const newCat = newCatInput.value.trim();
+            if (newCat && !categories.includes(newCat)) {
+                categories.push(newCat);
+                syncData('addCategory', { name: newCat });
+                renderCategorySelect();
 
-            // Select the newly added category in the dropdown
-            const newCatSelect = document.getElementById('newCat');
-            if (newCatSelect) {
-                newCatSelect.value = newCat;
+                const newCatSelect = document.getElementById('newCat');
+                if (newCatSelect) newCatSelect.value = newCat;
+
+                if (catPromptOverlay) catPromptOverlay.style.display = 'none';
+                newCatInput.value = '';
+            } else if (categories.includes(newCat)) {
+                window.alert('Phân loại này đã tồn tại!');
             }
-
-            catPromptOverlay.style.display = 'none';
-            newCatInput.value = '';
-        } else if (categories.includes(newCat)) {
-            window.alert('Phân loại này đã tồn tại!');
-        }
-    });
+        });
+    }
 
     // Custom Delete Confirmation Listeners
     cancelDeleteBtn.addEventListener('click', () => {
