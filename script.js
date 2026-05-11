@@ -182,6 +182,7 @@ async function loadData(silent = false) {
                 if (newCats) {
                     categories.splice(0, categories.length, ...newCats);
                     localStorage.setItem('categories', JSON.stringify(categories));
+                    renderCategorySelect();
                 }
             }
 
@@ -328,7 +329,23 @@ function renderLines() {
 }
 
 function renderCategories() {
-    // This is now handled within renderLines as a nested dropdown
+    renderCategorySelect();
+}
+
+function renderCategorySelect() {
+    const newCat = document.getElementById('newCat');
+    if (!newCat) return;
+    const currentVal = newCat.value;
+
+    // Add a default placeholder option
+    let html = '<option value="" disabled selected>Chọn phân loại...</option>';
+    html += categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+    newCat.innerHTML = html;
+
+    // Restore selection if it still exists
+    if (currentVal && categories.includes(currentVal)) {
+        newCat.value = currentVal;
+    }
 }
 
 function renderECNs() {
@@ -562,7 +579,11 @@ function editECN(id, itemCode) {
     document.getElementById('newItemCode').value = ecn.itemCode; // Fill the specific code
     document.getElementById('newLine').value = ecn.line;
     document.getElementById('new4m').value = ecn.m4e || '';
+
+    // Ensure categories are loaded before setting value
+    renderCategorySelect();
     document.getElementById('newCat').value = ecn.category;
+
     document.getElementById('newDesc').value = ecn.description;
     document.getElementById('newImage').value = ecn.image;
     document.getElementById('newDrive').value = ecn.driveLink;
@@ -753,11 +774,6 @@ function setupEventListeners() {
         }
     }
 
-    function renderCategorySelect() {
-        const newCat = document.getElementById('newCat');
-        if (!newCat) return;
-        newCat.innerHTML = categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
-    }
 
     function updateAdminUI() {
         if (adminToggle) {
