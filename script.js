@@ -138,13 +138,16 @@ async function syncData(action, data) {
 
     try {
         // Send to Google Apps Script
-        await fetch(SCRIPT_URL, {
+        const response = await fetch(SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify({ action, data }),
-            mode: 'no-cors' // Google Apps Script requires no-cors for simple POST
+            mode: 'no-cors'
         });
+        console.log(`Sync successful: ${action}`);
+        return true;
     } catch (e) {
         console.error('Lỗi đồng bộ server:', e);
+        return false;
     }
 }
 
@@ -743,7 +746,7 @@ function setupEventListeners() {
         document.getElementById('saveEcn').textContent = 'Lưu';
     });
 
-    saveEcn.addEventListener('click', () => {
+    saveEcn.addEventListener('click', async () => {
         const ecnId = document.getElementById('newEcnId').value;
         const itemCodesText = document.getElementById('newItemCode').value;
         const line = document.getElementById('newLine').value;
@@ -761,56 +764,73 @@ function setupEventListeners() {
             return;
         }
 
-        if (editingEcnId) {
-            // Update mode
-            const [oldId, oldCode] = editingEcnId.split('|');
-            const targetEcn = ecns.find(e => e.id === oldId && e.itemCode === oldCode);
+        // Thêm trạng thái loading
+        const originalBtnText = saveEcn.textContent;
+        saveEcn.textContent = 'Đang đồng bộ...';
+        saveEcn.disabled = true;
 
-            if (targetEcn) {
-                targetEcn.id = ecnId;
-                targetEcn.itemCode = itemCodes[0];
-                targetEcn.line = line;
-                targetEcn.m4e = m4e;
-                targetEcn.category = category;
-                targetEcn.description = description;
-                targetEcn.driveLink = driveLink;
-                targetEcn.image = getDirectDriveLink(imageLink);
-                targetEcn.lastUpdate = new Date().toISOString().split('T')[0];
+        try {
+            if (editingEcnId) {
+                // Update mode
+                const [oldId, oldCode] = editingEcnId.split('|');
+                const targetEcn = ecns.find(e => e.id === oldId && e.itemCode === oldCode);
 
-                syncData('updateECN', targetEcn);
+                if (targetEcn) {
+                    targetEcn.id = ecnId;
+                    targetEcn.itemCode = itemCodes[0];
+                    targetEcn.line = line;
+                    targetEcn.m4e = m4e;
+                    targetEcn.category = category;
+                    targetEcn.description = description;
+                    targetEcn.driveLink = driveLink;
+                    targetEcn.image = getDirectDriveLink(imageLink);
+                    targetEcn.lastUpdate = new Date().toISOString().split('T')[0];
+
+                    await syncData('updateECN', targetEcn);
+                }
+                editingEcnId = null;
+            } else {
+                // Create mode - Bulk Add
+                const newEcns = [];
+                itemCodes.forEach(code => {
+                    const newEcn = {
+                        id: ecnId,
+                        itemCode: code,
+                        line: line,
+                        m4e: m4e,
+                        category: category,
+                        description: description,
+                        lotNumbers: ["", "", ""],
+                        deliveries: [false, false, false],
+                        firstDeliveryDate: new Date().toISOString().split('T')[0],
+                        driveLink: driveLink,
+                        image: getDirectDriveLink(imageLink) || "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=400",
+                        lastUpdate: new Date().toISOString().split('T')[0]
+                    };
+                    newEcns.push(newEcn);
+                    ecns.unshift(newEcn);
+                });
+                
+                // Gửi tất cả trong 1 request duy nhất
+                await syncData('addECNs', newEcns);
             }
-            editingEcnId = null;
-        } else {
-            // Create mode
-            itemCodes.forEach(code => {
-                const newEcn = {
-                    id: ecnId,
-                    itemCode: code,
-                    line: line,
-                    m4e: m4e,
-                    category: category,
-                    description: description,
-                    lotNumbers: ["", "", ""],
-                    deliveries: [false, false, false],
-                    firstDeliveryDate: new Date().toISOString().split('T')[0],
-                    driveLink: driveLink,
-                    image: getDirectDriveLink(imageLink) || "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=400",
-                    lastUpdate: new Date().toISOString().split('T')[0]
-                };
-                ecns.unshift(newEcn);
-                syncData('addECN', newEcn);
-            });
+
+            renderECNs();
+            addModal.style.display = 'none';
+
+            // Reset Modal UI
+            document.querySelector('#addModal h2').textContent = 'Thêm ECN Mới';
+            saveEcn.textContent = 'Lưu';
+
+            // Reset fields
+            ['newEcnId', 'newItemCode', 'newDesc', 'newDrive', 'newImage', 'new4m'].forEach(id => document.getElementById(id).value = '');
+        } catch (error) {
+            console.error('Lỗi khi lưu ECN:', error);
+            alert('Có lỗi xảy ra khi lưu. Vui lòng thử lại.');
+        } finally {
+            saveEcn.disabled = false;
+            saveEcn.textContent = originalBtnText;
         }
-
-        renderECNs();
-        addModal.style.display = 'none';
-
-        // Reset Modal UI
-        document.querySelector('#addModal h2').textContent = 'Thêm ECN Mới';
-        document.getElementById('saveEcn').textContent = 'Lưu';
-
-        // Reset fields
-        ['newEcnId', 'newItemCode', 'newDesc', 'newDrive', 'newImage', 'new4m'].forEach(id => document.getElementById(id).value = '');
     });
 
     // Image Viewer Listeners
