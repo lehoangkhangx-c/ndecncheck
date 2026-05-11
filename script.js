@@ -113,10 +113,18 @@ async function loadData(silent = false) {
     if (ecns.length <= 3 && !silent) { // 3 is the mock data count
         const savedEcns = localStorage.getItem('ecns');
         const savedCats = localStorage.getItem('categories');
-        if (savedEcns) ecns = JSON.parse(savedEcns);
+        if (savedEcns) {
+            try {
+                ecns = JSON.parse(savedEcns);
+            } catch (e) { console.error("Error parsing local ECNS"); }
+        }
         if (savedCats) {
-            const parsedCats = JSON.parse(savedCats);
-            categories.splice(0, categories.length, ...parsedCats);
+            try {
+                const parsedCats = JSON.parse(savedCats);
+                if (Array.isArray(parsedCats)) {
+                    categories.splice(0, categories.length, ...parsedCats);
+                }
+            } catch (e) { console.error("Error parsing local Categories"); }
         }
         renderLines();
         renderECNs();
@@ -179,7 +187,7 @@ async function loadData(silent = false) {
                 hasActualChanges = true;
                 ecns = updatedEcns;
                 localStorage.setItem('ecns', JSON.stringify(ecns));
-                if (newCats) {
+                if (newCats && Array.isArray(newCats)) {
                     categories.splice(0, categories.length, ...newCats);
                     localStorage.setItem('categories', JSON.stringify(categories));
                     renderCategorySelect();
@@ -335,15 +343,32 @@ function renderCategories() {
 function renderCategorySelect() {
     const newCat = document.getElementById('newCat');
     if (!newCat) return;
+
     const currentVal = newCat.value;
+    newCat.innerHTML = ''; // Xóa sạch để tạo mới
 
-    // Add a default placeholder option
-    let html = '<option value="" disabled selected>Chọn phân loại...</option>';
-    html += categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
-    newCat.innerHTML = html;
+    // Thêm option mặc định
+    const defOpt = document.createElement('option');
+    defOpt.value = "";
+    defOpt.textContent = "Chọn phân loại...";
+    defOpt.disabled = true;
+    defOpt.selected = !currentVal;
+    newCat.appendChild(defOpt);
 
-    // Restore selection if it still exists
-    if (currentVal && categories.includes(currentVal)) {
+    // Danh sách dự phòng nếu categories bị lỗi
+    const safeCategories = Array.isArray(categories) && categories.length > 0
+        ? categories
+        : ["Housing", "TPA", "Terminal", "Seal", "Wire", "Bracket", "Connector"];
+
+    safeCategories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        newCat.appendChild(opt);
+    });
+
+    // Khôi phục giá trị cũ nếu hợp lệ
+    if (currentVal && safeCategories.includes(currentVal)) {
         newCat.value = currentVal;
     }
 }
@@ -581,8 +606,20 @@ function editECN(id, itemCode) {
     document.getElementById('new4m').value = ecn.m4e || '';
 
     // Ensure categories are loaded before setting value
-    renderCategorySelect();
-    document.getElementById('newCat').value = ecn.category;
+    const catSelect = document.getElementById('newCat');
+    if (catSelect) {
+        renderCategorySelect();
+        catSelect.value = ecn.category;
+
+        // Nếu giá trị hiện tại không khớp với ecn.category, thêm nó vào list
+        if (catSelect.value !== ecn.category && ecn.category) {
+            const opt = document.createElement('option');
+            opt.value = ecn.category;
+            opt.textContent = ecn.category;
+            catSelect.appendChild(opt);
+            catSelect.value = ecn.category;
+        }
+    }
 
     document.getElementById('newDesc').value = ecn.description;
     document.getElementById('newImage').value = ecn.image;
