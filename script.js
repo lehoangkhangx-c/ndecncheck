@@ -96,7 +96,7 @@ const SYNC_COOLDOWN = 10000; // 10 seconds cooldown after local write
 
 async function loadData(silent = false) {
     if (isSyncing) return;
-    
+
     // Don't sync from server if we just wrote something (give server time to update)
     if (silent && Date.now() - lastWriteTime < SYNC_COOLDOWN) {
         console.log('Skipping auto-sync to avoid overwriting local changes...');
@@ -145,33 +145,47 @@ async function loadData(silent = false) {
         }
 
         if (newEcns.length > 0) {
-            const oldDataStr = JSON.stringify(ecns);
-            const newDataStr = JSON.stringify(newEcns);
+            // Smart Merge: Don't let old server data overwrite fresh local changes
+            let hasActualChanges = false;
+            const now = Date.now();
 
-            if (oldDataStr !== newDataStr) {
-                console.log('Phát hiện dữ liệu mới từ Server. Đang cập nhật UI...');
+            const updatedEcns = newEcns.map(serverEcn => {
+                // Sanitize server data
+                if (serverEcn.deliveries) {
+                    serverEcn.deliveries = serverEcn.deliveries.map(d => {
+                        if (typeof d === 'string') return d.toLowerCase() === 'true';
+                        return !!d;
+                    });
+                } else {
+                    serverEcn.deliveries = [false, false, false];
+                }
+                if (!serverEcn.lotNumbers) serverEcn.lotNumbers = ["", "", ""];
+
+                // Find local version
+                const localEcn = ecns.find(e => e.id === serverEcn.id && e.itemCode === serverEcn.itemCode);
+
+                if (localEcn && localEcn._lastLocalUpdate) {
+                    const timeSinceUpdate = now - localEcn._lastLocalUpdate;
+                    if (timeSinceUpdate < 30000) { // 30 seconds protection
+                        // Server might be lagging, keep our local version for now
+                        return localEcn;
+                    }
+                }
+                return serverEcn;
+            });
+
+            // Check if the merged result is different from current memory
+            if (JSON.stringify(ecns) !== JSON.stringify(updatedEcns)) {
+                hasActualChanges = true;
+                ecns = updatedEcns;
+                localStorage.setItem('ecns', JSON.stringify(ecns));
                 if (newCats) {
                     categories.splice(0, categories.length, ...newCats);
                     localStorage.setItem('categories', JSON.stringify(categories));
                 }
+            }
 
-                // Sanitize newEcns: Ensure deliveries are booleans
-                newEcns.forEach(e => {
-                    if (e.deliveries) {
-                        e.deliveries = e.deliveries.map(d => {
-                            if (typeof d === 'string') return d.toLowerCase() === 'true';
-                            return !!d;
-                        });
-                    } else {
-                        e.deliveries = [false, false, false];
-                    }
-                    if (!e.lotNumbers) e.lotNumbers = ["", "", ""];
-                });
-
-                ecns = newEcns;
-                localStorage.setItem('ecns', JSON.stringify(ecns));
-
-                // Cập nhật Grid
+            if (hasActualChanges) {
                 renderLines();
                 renderECNs();
 
@@ -179,11 +193,10 @@ async function loadData(silent = false) {
                 if (detailOverlay.style.display === 'flex') {
                     const currentId = detailOverlay.dataset.ecnId;
                     const currentCode = detailOverlay.dataset.itemCode;
-                    
+
                     if (currentId && currentCode) {
                         const updatedEcn = ecns.find(e => e.id === currentId && e.itemCode === currentCode);
                         if (updatedEcn) {
-                            console.log('Cập nhật chi tiết ECN đang xem...');
                             showDetail(updatedEcn.id, updatedEcn.itemCode);
                         }
                     }
@@ -208,10 +221,10 @@ async function loadData(silent = false) {
 }
 
 function startAutoSync() {
-    // Sync mỗi 15 giây để tiệm cận thời gian thực
+    // Sync mỗi 5 giây để tiệm cận thời gian thực
     setInterval(() => {
         loadData(true);
-    }, 15000);
+    }, 5000);
 
     // Cho phép click vào indicator để sync thủ công
     const syncIndicator = document.getElementById('syncIndicator');
@@ -228,7 +241,16 @@ function saveData() {
 }
 
 async function syncData(action, data) {
-    lastWriteTime = Date.now(); // Mark that we are writing
+    const now = Date.now();
+    lastWriteTime = now; // Mark that we are writing
+
+    // Add local timestamp to the data to protect it from being reverted
+    if (Array.isArray(data)) {
+        data.forEach(item => item._lastLocalUpdate = now);
+    } else if (data && typeof data === 'object') {
+        data._lastLocalUpdate = now;
+    }
+
     saveData();
     if (!SCRIPT_URL) return;
 
@@ -891,7 +913,7 @@ function setupEventListeners() {
                     targetEcn.lastUpdate = new Date().toISOString().split('T')[0];
 
                     await syncData('updateECN', targetEcn);
-                    
+
                     // Refresh Detail view if it's open for this ECN
                     if (detailOverlay.style.display === 'flex') {
                         showDetail(targetEcn.id, targetEcn.itemCode);
