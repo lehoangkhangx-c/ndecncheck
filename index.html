@@ -42,8 +42,13 @@
                     </button>
                     <div>
                         <h1 class="text-gradient" style="font-size: 20px; margin: 0;">ECN Tracking</h1>
-                        <p class="desktop-only" style="color: var(--text-dim); margin-top: 2px; font-size: 12px;">Hệ
-                            thống theo dõi tiến độ</p>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <p class="desktop-only" style="color: var(--text-dim); margin: 2px 0 0 0; font-size: 12px;">Hệ thống theo dõi tiến độ</p>
+                            <div id="syncIndicator" class="sync-indicator">
+                                <div class="sync-dot"></div>
+                                <span class="sync-time">Đang tải...</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

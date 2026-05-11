@@ -90,40 +90,135 @@ let initialDist = 0;
 let initialScale = 1;
 let startX = 0, startY = 0, translateX = 0, translateY = 0;
 
-// Persistence & Sync logic
-async function loadData() {
-    // 1. Load from LocalStorage first (instant UI)
-    const savedEcns = localStorage.getItem('ecns');
-    const savedCats = localStorage.getItem('categories');
-    if (savedEcns) ecns = JSON.parse(savedEcns);
-    if (savedCats) {
-        const parsedCats = JSON.parse(savedCats);
-        categories.splice(0, categories.length, ...parsedCats);
-    }
-    renderLines();
-    renderECNs();
+let isSyncing = false;
+let lastWriteTime = 0;
+const SYNC_COOLDOWN = 10000; // 10 seconds cooldown after local write
 
-    // 2. Fetch from Google Sheets if SCRIPT_URL is configured
+async function loadData(silent = false) {
+    if (isSyncing) return;
+    
+    // Don't sync from server if we just wrote something (give server time to update)
+    if (silent && Date.now() - lastWriteTime < SYNC_COOLDOWN) {
+        console.log('Skipping auto-sync to avoid overwriting local changes...');
+        return;
+    }
+
+    isSyncing = true;
+
+    // Show sync indicator if not silent
+    const syncIndicator = document.getElementById('syncIndicator');
+    if (syncIndicator) syncIndicator.classList.add('syncing');
+
+    // 1. Initial Load from LocalStorage (only if array is empty)
+    if (ecns.length <= 3 && !silent) { // 3 is the mock data count
+        const savedEcns = localStorage.getItem('ecns');
+        const savedCats = localStorage.getItem('categories');
+        if (savedEcns) ecns = JSON.parse(savedEcns);
+        if (savedCats) {
+            const parsedCats = JSON.parse(savedCats);
+            categories.splice(0, categories.length, ...parsedCats);
+        }
+        renderLines();
+        renderECNs();
+    }
+
+    // 2. Fetch from Google Sheets
     if (!SCRIPT_URL) {
         console.warn('Chưa cấu hình SCRIPT_URL. Đang chạy ở chế độ Offline.');
+        isSyncing = false;
         return;
     }
 
     try {
-        const response = await fetch(SCRIPT_URL);
+        const cacheBuster = `?t=${new Date().getTime()}`;
+        const response = await fetch(SCRIPT_URL + cacheBuster);
         const serverData = await response.json();
-        // Chỉ ghi đè nếu server có dữ liệu (để tránh bị trắng trang khi file Sheet mới tạo)
-        if (serverData && Array.isArray(serverData) && serverData.length > 0) {
-            ecns = serverData;
-            localStorage.setItem('ecns', JSON.stringify(ecns));
-            renderLines(); // Cập nhật lại cả danh sách Line
-            renderECNs();
-            console.log('Dữ liệu đã được cập nhật từ Server.');
-        } else {
-            console.log('Server hiện đang trống, giữ lại dữ liệu hiện tại.');
+
+        let newEcns = [];
+        let newCats = null;
+
+        if (Array.isArray(serverData)) {
+            newEcns = serverData;
+        } else if (serverData && serverData.ecns) {
+            newEcns = serverData.ecns;
+            newCats = serverData.categories;
+        }
+
+        if (newEcns.length > 0) {
+            const oldDataStr = JSON.stringify(ecns);
+            const newDataStr = JSON.stringify(newEcns);
+
+            if (oldDataStr !== newDataStr) {
+                console.log('Phát hiện dữ liệu mới từ Server. Đang cập nhật UI...');
+                if (newCats) {
+                    categories.splice(0, categories.length, ...newCats);
+                    localStorage.setItem('categories', JSON.stringify(categories));
+                }
+
+                // Sanitize newEcns: Ensure deliveries are booleans
+                newEcns.forEach(e => {
+                    if (e.deliveries) {
+                        e.deliveries = e.deliveries.map(d => {
+                            if (typeof d === 'string') return d.toLowerCase() === 'true';
+                            return !!d;
+                        });
+                    } else {
+                        e.deliveries = [false, false, false];
+                    }
+                    if (!e.lotNumbers) e.lotNumbers = ["", "", ""];
+                });
+
+                ecns = newEcns;
+                localStorage.setItem('ecns', JSON.stringify(ecns));
+
+                // Cập nhật Grid
+                renderLines();
+                renderECNs();
+
+                // Cập nhật Detail nếu đang mở
+                if (detailOverlay.style.display === 'flex') {
+                    const currentId = detailOverlay.dataset.ecnId;
+                    const currentCode = detailOverlay.dataset.itemCode;
+                    
+                    if (currentId && currentCode) {
+                        const updatedEcn = ecns.find(e => e.id === currentId && e.itemCode === currentCode);
+                        if (updatedEcn) {
+                            console.log('Cập nhật chi tiết ECN đang xem...');
+                            showDetail(updatedEcn.id, updatedEcn.itemCode);
+                        }
+                    }
+                }
+            }
+
+            // Update last sync time
+            if (syncIndicator) {
+                const now = new Date();
+                const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+                syncIndicator.querySelector('.sync-time').textContent = `Cập nhật lúc: ${timeStr}`;
+            }
         }
     } catch (e) {
         console.error('Không thể kết nối Server:', e);
+    } finally {
+        isSyncing = false;
+        if (syncIndicator) {
+            setTimeout(() => syncIndicator.classList.remove('syncing'), 1000);
+        }
+    }
+}
+
+function startAutoSync() {
+    // Sync mỗi 15 giây để tiệm cận thời gian thực
+    setInterval(() => {
+        loadData(true);
+    }, 15000);
+
+    // Cho phép click vào indicator để sync thủ công
+    const syncIndicator = document.getElementById('syncIndicator');
+    if (syncIndicator) {
+        syncIndicator.style.cursor = 'pointer';
+        syncIndicator.title = 'Click để đồng bộ ngay';
+        syncIndicator.onclick = () => loadData(false);
     }
 }
 
@@ -133,6 +228,7 @@ function saveData() {
 }
 
 async function syncData(action, data) {
+    lastWriteTime = Date.now(); // Mark that we are writing
     saveData();
     if (!SCRIPT_URL) return;
 
@@ -169,6 +265,7 @@ function init() {
     renderCategories();
     renderECNs();
     setupEventListeners();
+    startAutoSync();
 }
 
 function renderLines() {
@@ -239,10 +336,13 @@ function renderECNs() {
                         ${[0, 1, 2].map((i) => {
             const colors = ['#ff4757', '#ffa502', '#2ed573'];
             const isActive = ecn.deliveries[i];
-            // If whole ECN is done, use green for all dots
             const dotColor = isDone ? '#2ed573' : colors[i];
             return `
-                                <div style="width: 55px; height: 55px; border-radius: 50%; background: ${isActive ? dotColor : 'var(--bg-accent)'}; border: 2.5px solid ${isActive ? 'transparent' : '#cbd5e1'}; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; box-shadow: ${isActive ? '0 0 20px ' + dotColor + '80' : 'none'};">
+                                <div 
+                                    class="status-dot-btn ${isAdmin ? 'admin-active' : ''}" 
+                                    onclick="${isAdmin ? `event.stopPropagation(); toggleDelivery('${ecn.id.replace(/'/g, "\\'")}', ${i}, '${ecn.itemCode.replace(/'/g, "\\'")}')` : ''}"
+                                    style="width: 55px; height: 55px; border-radius: 50%; background: ${isActive ? dotColor : 'var(--bg-accent)'}; border: 2.5px solid ${isActive ? 'transparent' : '#cbd5e1'}; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; box-shadow: ${isActive ? '0 0 20px ' + dotColor + '80' : 'none'}; cursor: ${isAdmin ? 'pointer' : 'default'}; transition: all 0.2s;"
+                                >
                                     ${isActive ? '<i data-lucide="check" style="width: 32px; height: 32px; stroke-width: 4;"></i>' : ''}
                                 </div>
                             `;
@@ -283,7 +383,11 @@ function showDetail(id, itemCode) {
     const ecn = ecns.find(e => e.id === id && e.itemCode === itemCode);
     if (!ecn) return;
 
-    const deliveryCount = ecn.deliveries.filter(d => d).length;
+    // Track current open ECN for auto-sync
+    detailOverlay.dataset.ecnId = id;
+    detailOverlay.dataset.itemCode = itemCode;
+
+    const deliveryCount = (ecn.deliveries || []).filter(d => d).length;
     const titleEl = document.getElementById('detailHeaderTitle');
     titleEl.textContent = ecn.itemCode;
 
@@ -327,10 +431,10 @@ function showDetail(id, itemCode) {
                                         class="search-input" 
                                         style="padding: 8px 12px; font-size: 12px; width: 100%; text-align: center; background: white; height: 36px;" 
                                         value="${ecn.lotNumbers[i]}" 
-                                        onchange="updateLotNumber('${ecn.id}', ${i}, this.value, '${ecn.itemCode}')"
+                                        onchange="updateLotNumber('${ecn.id.replace(/'/g, "\\'")}', ${i}, this.value, '${ecn.itemCode.replace(/'/g, "\\'")}')"
                                         placeholder="Ngày..."
                                     >
-                                    <button onclick="toggleDelivery('${ecn.id}', ${i}, '${ecn.itemCode}')" style="margin-top: 8px; width: 100%; font-size: 10px; background: ${isActive ? 'rgba(148, 163, 184, 0.1)' : colors[i] + '15'}; border: 1.5px solid ${isActive ? '#94a3b8' : colors[i]}; color: ${isActive ? '#64748b' : colors[i]}; padding: 6px; border-radius: 100px; cursor: pointer; font-weight: 800; transition: all 0.2s;">
+                                    <button onclick="toggleDelivery('${ecn.id.replace(/'/g, "\\'")}', ${i}, '${ecn.itemCode.replace(/'/g, "\\'")}')" style="margin-top: 8px; width: 100%; font-size: 10px; background: ${isActive ? 'rgba(148, 163, 184, 0.1)' : colors[i] + '15'}; border: 1.5px solid ${isActive ? '#94a3b8' : colors[i]}; color: ${isActive ? '#64748b' : colors[i]}; padding: 6px; border-radius: 100px; cursor: pointer; font-weight: 800; transition: all 0.2s;">
                                         ${isActive ? 'Đã giao' : 'Chưa giao'}
                                     </button>
                                 ` : `
@@ -401,8 +505,8 @@ function showDetail(id, itemCode) {
     if (isAdmin) {
         const btnEdit = document.getElementById('btnEditECN');
         const btnDelete = document.getElementById('btnDeleteECN');
-        if (btnEdit) btnEdit.onclick = () => editECN(ecn.id, ecn.itemCode);
-        if (btnDelete) btnDelete.onclick = () => deleteECN(ecn.id, ecn.itemCode);
+        if (btnEdit) btnEdit.onclick = () => editECN(id, itemCode);
+        if (btnDelete) btnDelete.onclick = () => deleteECN(id, itemCode);
     }
 }
 
@@ -787,6 +891,11 @@ function setupEventListeners() {
                     targetEcn.lastUpdate = new Date().toISOString().split('T')[0];
 
                     await syncData('updateECN', targetEcn);
+                    
+                    // Refresh Detail view if it's open for this ECN
+                    if (detailOverlay.style.display === 'flex') {
+                        showDetail(targetEcn.id, targetEcn.itemCode);
+                    }
                 }
                 editingEcnId = null;
             } else {
@@ -810,7 +919,7 @@ function setupEventListeners() {
                     newEcns.push(newEcn);
                     ecns.unshift(newEcn);
                 });
-                
+
                 // Gửi tất cả trong 1 request duy nhất
                 await syncData('addECNs', newEcns);
             }

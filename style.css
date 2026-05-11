@@ -488,3 +488,62 @@ button:active {
     height: 10px !important;
     opacity: 0.6;
 }
+
+/* Sync Indicator */
+.sync-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-accent);
+    padding: 2px 8px;
+    border-radius: 100px;
+    opacity: 0.8;
+    transition: all 0.3s ease;
+}
+
+.sync-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #94a3b8;
+    transition: all 0.3s ease;
+}
+
+.sync-time {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+
+.sync-indicator.syncing {
+    background: var(--primary-glow);
+    opacity: 1;
+}
+
+.sync-indicator.syncing .sync-dot {
+    background: var(--primary);
+    box-shadow: 0 0 8px var(--primary);
+    animation: pulse-sync 1s infinite;
+}
+
+@keyframes pulse-sync {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.5; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Status Dot Interactive */
+.status-dot-btn {
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+.status-dot-btn.admin-active:hover {
+    transform: scale(1.15);
+    filter: brightness(1.1);
+    z-index: 10;
+}
+
+.status-dot-btn.admin-active:active {
+    transform: scale(0.9);
+}
