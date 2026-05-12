@@ -103,14 +103,13 @@ body {
     transform: translateX(-100%);
     background: var(--bg-card);
     border-right: 1px solid var(--bg-accent);
-    padding: 18px 14px;
+    padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 24px;
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     z-index: 1100;
     box-shadow: 20px 0 50px rgba(0, 0, 0, 0.05);
-    overflow-y: auto;
 }
 
 .sidebar.open {
@@ -121,26 +120,6 @@ body {
     .sidebar {
         width: 50%; /* Only half screen on mobile */
     }
-}
-
-/* Sidebar Overlay */
-.sidebar-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(2px);
-    z-index: 1050; /* Below sidebar (1100) but above everything else */
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-}
-
-.sidebar-overlay.active {
-    opacity: 1;
-    visibility: visible;
 }
 
 /* Typography */
@@ -572,202 +551,4 @@ button:active {
 
 .status-dot-btn.admin-active:active {
     transform: scale(0.9);
-}
-
-/* ===== Sidebar Filter Styles ===== */
-.filter-section {
-    padding-bottom: 16px;
-}
-
-.filter-section h3 {
-    display: flex;
-    align-items: center;
-    font-size: 11px !important;
-    color: var(--text-dim) !important;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 10px !important;
-    font-weight: 700;
-}
-
-/* Item Code Search in Sidebar */
-.sidebar-filter-input-wrap {
-    position: relative;
-}
-
-.sidebar-search-icon {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 14px !important;
-    height: 14px !important;
-    color: var(--text-dim);
-    opacity: 0.6;
-    pointer-events: none;
-}
-
-.sidebar-filter-input {
-    width: 100%;
-    padding: 9px 12px 9px 32px;
-    background: var(--bg-dark);
-    border: 1px solid var(--bg-accent);
-    border-radius: var(--radius-sm);
-    color: var(--text-main);
-    font-size: 12px;
-    font-family: 'Inter', sans-serif;
-    transition: all 0.25s ease;
-}
-
-.sidebar-filter-input:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px var(--primary-glow);
-    background: var(--bg-card);
-}
-
-.sidebar-filter-input::placeholder {
-    color: var(--text-dim);
-    opacity: 0.5;
-}
-
-/* Sort Toggle Grid */
-.sort-toggle-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-}
-
-.sort-toggle-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 10px 4px;
-    background: var(--bg-dark);
-    border: 1.5px solid var(--bg-accent);
-    border-radius: var(--radius-sm);
-    color: var(--text-dim);
-    font-size: 11px;
-    font-weight: 600;
-    font-family: 'Inter', sans-serif;
-    cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    position: relative;
-    overflow: hidden;
-    width: 100%;
-}
-
-.sort-toggle-btn:hover {
-    background: var(--bg-accent);
-    color: var(--text-main);
-    border-color: var(--text-dim);
-}
-
-.sort-toggle-btn.active {
-    background: var(--primary-glow);
-    color: var(--primary);
-    border-color: var(--primary);
-    font-weight: 700;
-    box-shadow: 0 0 12px var(--primary-glow);
-}
-
-.sort-toggle-btn.active i,
-.sort-toggle-btn.active svg {
-    color: var(--primary);
-}
-
-.sort-toggle-btn i, .sort-toggle-btn svg {
-    flex-shrink: 0;
-}
-
-/* Status Filter Buttons */
-.status-filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.status-filter-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: var(--radius-sm);
-    color: var(--text-dim);
-    font-size: 12px;
-    font-weight: 600;
-    font-family: 'Inter', sans-serif;
-    cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-.status-filter-btn::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 3px;
-    height: 100%;
-    border-radius: 0 2px 2px 0;
-    opacity: 0;
-    transition: opacity 0.25s ease;
-}
-
-.status-filter-btn:hover {
-    background: var(--bg-dark);
-    color: var(--text-main);
-}
-
-.status-filter-btn.active {
-    font-weight: 700;
-}
-
-/* All */
-.status-filter-btn[data-status="all"].active {
-    background: var(--primary-glow);
-    color: var(--primary);
-    border-color: rgba(2, 132, 199, 0.15);
-}
-.status-filter-btn[data-status="all"].active::before {
-    background: var(--primary);
-    opacity: 1;
-}
-
-/* Incomplete */
-.status-filter-btn[data-status="incomplete"].active {
-    background: rgba(245, 158, 11, 0.08);
-    color: #d97706;
-    border-color: rgba(245, 158, 11, 0.15);
-}
-.status-filter-btn[data-status="incomplete"].active::before {
-    background: #f59e0b;
-    opacity: 1;
-}
-
-/* Complete */
-.status-filter-btn[data-status="complete"].active {
-    background: rgba(16, 185, 129, 0.08);
-    color: #059669;
-    border-color: rgba(16, 185, 129, 0.15);
-}
-.status-filter-btn[data-status="complete"].active::before {
-    background: #10b981;
-    opacity: 1;
-}
-
-.status-filter-btn i, .status-filter-btn svg {
-    flex-shrink: 0;
-}
-
-/* Sidebar Divider */
-.sidebar-divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--bg-accent), transparent);
-    margin: 2px 0;
-    opacity: 0.5;
 }

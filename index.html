@@ -15,56 +15,15 @@
 </head>
 
 <body>
-    <div id="sidebarOverlay" class="sidebar-overlay"></div>
     <div class="app-container">
         <!-- Sidebar moved to the left -->
         <aside class="sidebar">
-
-            <!-- Sort Section -->
-            <div class="sidebar-section filter-section">
-                <h3><i data-lucide="arrow-down-up" style="width:14px;height:14px;display:inline;vertical-align:-2px;margin-right:4px;"></i> Sắp xếp</h3>
-                <div class="sort-toggle-grid">
-                    <button class="sort-toggle-btn" data-sort="itemCode-asc" id="sortItemAZ">
-                        <i data-lucide="arrow-up-a-z" style="width:14px;height:14px;"></i>
-                        <span>A → Z</span>
-                    </button>
-                    <button class="sort-toggle-btn" data-sort="itemCode-desc" id="sortItemZA">
-                        <i data-lucide="arrow-down-z-a" style="width:14px;height:14px;"></i>
-                        <span>Z → A</span>
-                    </button>
-                    <button class="sort-toggle-btn" data-sort="time-desc" id="sortTimeNewest">
-                        <i data-lucide="calendar-check" style="width:14px;height:14px;"></i>
-                        <span>Mới nhất</span>
-                    </button>
-                    <button class="sort-toggle-btn" data-sort="time-asc" id="sortTimeOldest">
-                        <i data-lucide="calendar" style="width:14px;height:14px;"></i>
-                        <span>Cũ nhất</span>
-                    </button>
-                </div>
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;" class="mobile-only">
+                <button id="closeSidebar"
+                    style="background: none; border: none; color: var(--text-dim); cursor: pointer;">
+                    <i data-lucide="x"></i>
+                </button>
             </div>
-
-            <!-- Filter by Status -->
-            <div class="sidebar-section filter-section">
-                <h3><i data-lucide="filter" style="width:14px;height:14px;display:inline;vertical-align:-2px;margin-right:4px;"></i> Trạng thái</h3>
-                <div class="status-filter-group">
-                    <button class="status-filter-btn active" data-status="all" id="filterAll">
-                        <i data-lucide="layers" style="width:14px;height:14px;"></i>
-                        <span>Tất cả</span>
-                    </button>
-                    <button class="status-filter-btn" data-status="incomplete" id="filterIncomplete">
-                        <i data-lucide="clock" style="width:14px;height:14px;"></i>
-                        <span>Chưa xong</span>
-                    </button>
-                    <button class="status-filter-btn" data-status="complete" id="filterComplete">
-                        <i data-lucide="check-circle" style="width:14px;height:14px;"></i>
-                        <span>Hoàn thành</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="sidebar-divider"></div>
-
-            <!-- Production Lines -->
             <div class="sidebar-section">
                 <h3>Production Lines</h3>
                 <div id="lineList">

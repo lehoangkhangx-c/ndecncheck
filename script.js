@@ -1,11 +1,51 @@
-// Data State
-let ecns = [];
+// Mock Data
+let ecns = [
+    {
+        id: "ECN-2024-001",
+        itemCode: "TR-8902-X",
+        line: "CR",
+        category: "Housing",
+        description: "Thay đổi khuôn đúc Housing mặt trước để tăng độ bền nhiệt.",
+        lotNumbers: ["LOT240501A", "LOT240508B", ""],
+        deliveries: [true, true, false],
+        firstDeliveryDate: "2024-05-01",
+        driveLink: "https://drive.google.com/example1",
+        image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=400",
+        lastUpdate: "2024-05-08"
+    },
+    {
+        id: "ECN-2024-002",
+        itemCode: "CP-4410-Z",
+        line: "CV",
+        category: "Terminal",
+        description: "Mạ lại lớp Niken cho Terminal 0.64 để chống oxy hóa.",
+        lotNumbers: ["LOT240502Z", "LOT240510C", "LOT240515D"],
+        deliveries: [true, true, true],
+        firstDeliveryDate: "2024-05-02",
+        driveLink: "https://drive.google.com/example2",
+        image: "https://images.unsplash.com/photo-1590674899484-13da0d1b58f5?auto=format&fit=crop&q=80&w=400",
+        lastUpdate: "2024-05-15"
+    },
+    {
+        id: "ECN-2024-003",
+        itemCode: "HD-1122-M",
+        line: "SP",
+        category: "TPA",
+        description: "Cập nhật thiết kế TPA để tránh lắp ngược linh kiện.",
+        lotNumbers: ["LOT240520M", "", ""],
+        deliveries: [true, false, false],
+        firstDeliveryDate: "2024-05-20",
+        driveLink: "https://drive.google.com/example3",
+        image: "https://images.unsplash.com/photo-1565373676930-de49242d7350?auto=format&fit=crop&q=80&w=400",
+        lastUpdate: "2024-05-20"
+    }
+];
 
 const lines = ["CR", "CV", "SP", "HC", "PSW", "VS1", "HM", "VS2", "GA", "PC"];
 const categories = ["Housing", "TPA", "Terminal", "Seal", "Wire", "Bracket", "Connector"];
 
 // State Management
-let currentFilter = { line: 'all', category: 'all', search: '', status: 'all', sortBy: 'none' };
+let currentFilter = { line: 'all', category: 'all', search: '' };
 let isAdmin = false;
 let editingEcnId = null;
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzEbV-8ShOalFeSmQDEDNXrLsyEhfvp1b2Czdp0QaAsf2mXc2FfeWMx3dbZFdh4Jl1LKw/exec'; // URL Google Apps Script Web App
@@ -24,9 +64,9 @@ const addEcnBtn = document.getElementById('addEcnBtn');
 const cancelAdd = document.getElementById('cancelAdd');
 const saveEcn = document.getElementById('saveEcn');
 const sidebar = document.querySelector('.sidebar');
-const sidebarOverlay = document.getElementById('sidebarOverlay');
 const sidebarToggle = document.getElementById('sidebarToggle');
 const sidebarIcon = sidebarToggle.querySelector('i');
+const closeSidebar = document.getElementById('closeSidebar');
 const addCatBtn = document.getElementById('addCatBtn');
 const adminCategoryActions = document.getElementById('adminCategoryActions');
 const addCatModalBtn = document.getElementById('addCatModalBtn');
@@ -70,7 +110,7 @@ async function loadData(silent = false) {
     if (syncIndicator) syncIndicator.classList.add('syncing');
 
     // 1. Initial Load from LocalStorage (only if array is empty)
-    if (ecns.length === 0 && !silent) {
+    if (ecns.length <= 3 && !silent) { // 3 is the mock data count
         const savedEcns = localStorage.getItem('ecns');
         const savedCats = localStorage.getItem('categories');
         if (savedEcns) {
@@ -257,12 +297,6 @@ function init() {
     renderECNs();
     setupEventListeners();
     startAutoSync();
-
-    // Tự động tải lại trang mỗi 4 tiếng để làm mới bộ nhớ và script
-    const FOUR_HOURS = 4 * 60 * 60 * 1000;
-    setTimeout(() => {
-        location.reload();
-    }, FOUR_HOURS);
 }
 
 function renderLines() {
@@ -340,7 +374,7 @@ function renderCategorySelect() {
 }
 
 function renderECNs() {
-    let filtered = ecns.filter(ecn => {
+    const filtered = ecns.filter(ecn => {
         const matchesLine = currentFilter.line === 'all' || ecn.line === currentFilter.line;
         const matchesCat = currentFilter.category === 'all' || ecn.category.toLowerCase() === currentFilter.category.toLowerCase();
         const searchLower = currentFilter.search.toLowerCase();
@@ -351,28 +385,8 @@ function renderECNs() {
             (ecn.line?.toLowerCase().includes(searchLower) || false) ||
             (ecn.category?.toLowerCase().includes(searchLower) || false) ||
             (ecn.m4e?.toLowerCase().includes(searchLower) || false);
-
-        // Filter by Status
-        let matchesStatus = true;
-        if (currentFilter.status === 'complete') {
-            matchesStatus = ecn.deliveries.filter(d => d).length === 3;
-        } else if (currentFilter.status === 'incomplete') {
-            matchesStatus = ecn.deliveries.filter(d => d).length < 3;
-        }
-
-        return matchesLine && matchesCat && matchesSearch && matchesStatus;
+        return matchesLine && matchesCat && matchesSearch;
     });
-
-    // Sort results
-    if (currentFilter.sortBy === 'itemCode-asc') {
-        filtered.sort((a, b) => (a.itemCode || '').localeCompare(b.itemCode || ''));
-    } else if (currentFilter.sortBy === 'itemCode-desc') {
-        filtered.sort((a, b) => (b.itemCode || '').localeCompare(a.itemCode || ''));
-    } else if (currentFilter.sortBy === 'time-desc') {
-        filtered.sort((a, b) => (b.lastUpdate || '').localeCompare(a.lastUpdate || ''));
-    } else if (currentFilter.sortBy === 'time-asc') {
-        filtered.sort((a, b) => (a.lastUpdate || '').localeCompare(b.lastUpdate || ''));
-    }
 
     ecnGrid.innerHTML = filtered.map(ecn => {
         const deliveryCount = ecn.deliveries.filter(d => d).length;
@@ -673,42 +687,6 @@ function updateImageTransform() {
 }
 
 function setupEventListeners() {
-    // === Sidebar Sort & Filter Controls ===
-
-    // Sort Toggle Buttons (A-Z, Z-A, Newest, Oldest)
-    const sortBtns = document.querySelectorAll('.sort-toggle-btn');
-    sortBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const isAlreadyActive = btn.classList.contains('active');
-
-            // Deactivate all sort buttons
-            sortBtns.forEach(b => b.classList.remove('active'));
-
-            if (isAlreadyActive) {
-                currentFilter.sortBy = 'none';
-            } else {
-                btn.classList.add('active');
-                currentFilter.sortBy = btn.dataset.sort;
-            }
-            console.log('Sort changed to:', currentFilter.sortBy);
-            renderECNs();
-        });
-    });
-
-    // Filter by Status
-    const statusBtns = document.querySelectorAll('.status-filter-btn');
-    statusBtns.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            statusBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentFilter.status = btn.dataset.status;
-            console.log('Status filter changed to:', currentFilter.status);
-            renderECNs();
-        });
-    });
-
     // Sidebar filtering (Nested Dropdown)
     lineList.addEventListener('click', (e) => {
         const lineItem = e.target.closest('.line-item');
@@ -762,18 +740,30 @@ function setupEventListeners() {
     // Sidebar Toggle
     sidebarToggle.addEventListener('click', (e) => {
         e.stopPropagation();
-        const isOpen = sidebar.classList.toggle('open');
-        sidebarOverlay.classList.toggle('active', isOpen);
+        sidebar.classList.toggle('open');
+        const isOpen = sidebar.classList.contains('open');
         sidebarIcon.setAttribute('data-lucide', isOpen ? 'x' : 'menu');
         lucide.createIcons();
     });
 
-    // Close sidebar when clicking overlay
-    sidebarOverlay.addEventListener('click', () => {
+    closeSidebar.addEventListener('click', () => {
         sidebar.classList.remove('open');
-        sidebarOverlay.classList.remove('active');
         sidebarIcon.setAttribute('data-lucide', 'menu');
         lucide.createIcons();
+    });
+
+    // Close sidebar when clicking outside
+    document.addEventListener('click', (e) => {
+        // Chỉ đóng nếu sidebar đang mở và click KHÔNG nằm trong sidebar hoặc nút mở sidebar
+        // Kiểm tra e.target.closest vì e.target có thể bị xóa khỏi DOM sau khi click (ví dụ khi render lại)
+        const isSidebarClick = e.target.closest('.sidebar');
+        const isToggleClick = e.target.closest('#sidebarToggle');
+
+        if (sidebar.classList.contains('open') && !isSidebarClick && !isToggleClick) {
+            sidebar.classList.remove('open');
+            sidebarIcon.setAttribute('data-lucide', 'menu');
+            lucide.createIcons();
+        }
     });
 
     // Custom Password Modal Logic
